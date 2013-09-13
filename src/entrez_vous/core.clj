@@ -10,7 +10,8 @@
       (clojure.string/replace " " "+")
       (clojure.string/lower-case)))
 
-(defn foo
-  "I don't do a whole lot."
-  [x]
-  (println x "Hello, World!"))
+(defn build-query-string
+  [options]
+  (let [kw-string (fn [k] (clojure.string/replace (str k) ":" ""))
+        kv-string (fn [[k v]] (str (kw-string k) "=" v))]
+    (clojure.string/join "&" (map kv-string options))))
