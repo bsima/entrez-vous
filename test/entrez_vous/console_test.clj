@@ -13,10 +13,10 @@
                        "--limit"  "11"
                        "--output" "/path/to"
                        "--help"])]
-      (is (= (:help parsed-values) true))
-      (is (= (:name parsed-values) #{"Billy Joel" "Baron Davis"}))
-      (is (= (:email parsed-values) "foo@bar.baz"))
-      (is (= (:hops parsed-values) 10))
-      (is (= (:input parsed-values) "qux.txt"))
-      (is (= (:limit parsed-values) 11))
+      (is (= (:help   parsed-values) true))
+      (is (= (:name   parsed-values) #{"Billy Joel" "Baron Davis"}))
+      (is (= (:email  parsed-values) "foo@bar.baz"))
+      (is (= (:hops   parsed-values) 10))
+      (is (= (:input  parsed-values) "qux.txt"))
+      (is (= (:limit  parsed-values) 11))
       (is (= (:output parsed-values) "/path/to")))))

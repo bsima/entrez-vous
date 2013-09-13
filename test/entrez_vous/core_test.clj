@@ -2,6 +2,6 @@
   (:require [clojure.test :refer :all]
             [entrez-vous.core :refer :all]))
 
-(deftest a-test
-  (testing "FIXME, I fail."
-    (is (= 0 1))))
+(deftest test-clean-name
+  (testing "Should lower-case and replace whitepace with '+' character."
+    (is (= "herman+miller+aeron" (clean-name "Herman Miller Aeron")))))
