@@ -1,9 +1,11 @@
 (ns entrez-vous.core
   (:require [org.httpkit.client :as http]))
 
-(def utility-base-url "eutils.ncbi.nlm.nih.gov/entrez/eutils")
+(def session-webenv (atom nil))
 
-(def utility-webenv (atom nil))
+(def session-query-keys (atom nil))
+
+(def utility-base-url "eutils.ncbi.nlm.nih.gov/entrez/eutils")
 
 (def utility-names
   { :search "esearch.fcgi"
@@ -22,12 +24,6 @@
 
 ;; http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=George+hripcsak[author]
 ;; http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=23684593,23975625
-;;
-;; Per session stuff:
-;;
-;; query_key
-;; WebEnv
-;; 
 
 (defn expand-name-for-query [name]
   (-> name (clojure.string/replace " " "+")
@@ -35,7 +31,24 @@
            (str "[author]")))
 
 (defn build-query-string [parameter-map]
-  (let [kw-string (fn [k] (clojure.string/replace (str k) ":" ""))
-        kv-string (fn [[k v]] (str (kw-string k) "=" v))]
-    (clojure.string/join "&" (map kv-string parameter-map))))
+  (let [key-string (fn [k] (clojure.string/replace (str k) ":" ""))
+        key-value-string (fn [[k v]] (str (key-string k) "=" v))]
+    (clojure.string/join "&" (map key-value-string parameter-map))))
 
+(defn make-request-url [utility-key request-parameters session-parameters]
+  (let [utility-name (utility-key utility-names)
+        utility-url (str utility-base-url "/" utility-name)
+        query-parameter-map (reduce into [request-parameters
+                                          session-parameters
+                                          (:all utility-parameters)
+                                          (utility-key utility-parameters)])
+        query-string (build-query-string query-parameter-map)]
+    (str utility-url "?" query-string)))
+
+
+
+;; (http/get request-url { :keepalive 3000 :timeout 1000 }
+;;           (fn [{:keys [status headers body error]}]
+;;             (if error
+;;               (println "Failed, exception is " error)
+;;               (println "Async HTTP GET: " status))))
