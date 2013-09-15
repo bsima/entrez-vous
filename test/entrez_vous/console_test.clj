@@ -7,16 +7,12 @@
     (let [[parsed-values _ _]
           (parse-args ["--name"   "Baron Davis"
                        "--name"   "Billy Joel"
-                       "--email"  "foo@bar.baz"
                        "--input"  "qux.txt"
-                       "--hops"   "10"
-                       "--limit"  "11"
                        "--output" "/path/to"
-                       "--help"])]
+                       "--help"
+                       "--hop"])]
       (is (= (:help   parsed-values) true))
+      (is (= (:hop    parsed-values) true))
       (is (= (:name   parsed-values) #{"Billy Joel" "Baron Davis"}))
-      (is (= (:email  parsed-values) "foo@bar.baz"))
-      (is (= (:hops   parsed-values) 10))
       (is (= (:input  parsed-values) "qux.txt"))
-      (is (= (:limit  parsed-values) 11))
       (is (= (:output parsed-values) "/path/to")))))
