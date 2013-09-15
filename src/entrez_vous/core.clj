@@ -2,25 +2,19 @@
   (:require [org.httpkit.client :as http]
             [clojure.data.xml :as xml]))
 
-(def session-webenv (atom nil))
-
-(def session-query-keys (atom nil))
-
-(def utility-base-url "eutils.ncbi.nlm.nih.gov/entrez/eutils")
+(def utility-base-url "http://eutils.ncbi.nlm.nih.gov/entrez/eutils")
 
 (def utility-names
   { :search "esearch.fcgi"
     :fetch "efetch.fcgi"
-    :link "elink.fcgi"
-    :post "epost.fcgi" })
+    :link "elink.fcgi" })
 
 (def utility-parameters
   {
-   :all { :tool "entrez-vous-abstract-retriever" :db "pubmed" :usehistory "y" }
+   :all { :tool "entrez-vous" :db "pubmed" }
    :fetch { :retmode "xml" :rettype "abstract" :retmax "10000" :retstart "0" }
    :link { :dbfrom "pubmed" :cmd "neighbor_score" :linkname "pubmed_pubmed" }
    :search { :retstart "0" :retmax "100000" }
-   :post { }
    })
 
 (defn expand-name-for-query [name]
@@ -33,11 +27,10 @@
         key-value-string (fn [[k v]] (str (key-string k) "=" v))]
     (clojure.string/join "&" (map key-value-string parameter-map))))
 
-(defn make-request-url [utility-key request-parameters session-parameters]
+(defn make-request-url [utility-key request-parameters]
   (let [utility-name (utility-key utility-names)
         utility-url (str utility-base-url "/" utility-name)
         query-parameter-map (reduce into [request-parameters
-                                          session-parameters
                                           (:all utility-parameters)
                                           (utility-key utility-parameters)])
         query-string (build-query-string query-parameter-map)]
@@ -56,12 +49,23 @@
         children (unnest-children [xml-data] tag-sequence)]
     (mapcat #(:content %) children)))
 
-(def get-search-result-uids (partial get-tag-sequence-content [:IdList :Id]))
+(def get-search-result-uids
+  (partial get-tag-sequence-content [:IdList :Id]))
 
-(def get-link-result-uids (partial get-tag-sequence-content [:LinkSet :LinkSetDb :Link :Id]))
+(def get-link-result-uids
+  (partial get-tag-sequence-content [:LinkSet :LinkSetDb :Link :Id]))
 
-;; (http/get request-url { :keepalive 3000 :timeout 1000 }
-;;           (fn [{:keys [status headers body error]}]
-;;             (if error
-;;               (println "Failed, exception is " error)
-;;               (println "Async HTTP GET: " status))))
+(defn retrieve-author-uids [author]
+  (let [request-parameters {:term (expand-name-for-query author)}
+        request-url (make-request-url :search request-parameters)]
+    (get-search-result-uids
+     (:body @(http/get request-url { :keepalive 3000 :timeout 1000 })))))
+
+(defn retrieve-related-uids [original-uids]
+  (let [request-parameters {:id (clojure.string/join "," original-uids)}
+        request-url (make-request-url :link request-parameters)]
+    (get-link-result-uids
+     (:body @(http/post request-url { :keepalive 3000 :timeout 1000 })))))
+
+(defn retrieve-paper-abstracts [uids]
+  nil)
