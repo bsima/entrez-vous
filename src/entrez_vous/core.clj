@@ -5,17 +5,15 @@
 (def utility-base-url "http://eutils.ncbi.nlm.nih.gov/entrez/eutils")
 
 (def utility-names
-  { :search "esearch.fcgi"
-    :fetch "efetch.fcgi"
-    :link "elink.fcgi" })
+  {:search "esearch.fcgi"
+   :fetch "efetch.fcgi"
+   :link "elink.fcgi"})
 
 (def utility-parameters
-  {
-   :all { :tool "entrez-vous" :db "pubmed" }
+  {:all { :tool "entrez-vous" :db "pubmed" }
    :fetch { :retmode "xml" :rettype "abstract" :retmax "10000" :retstart "0" }
    :link { :dbfrom "pubmed" :cmd "neighbor_score" :linkname "pubmed_pubmed" }
-   :search { :retstart "0" :retmax "100000" }
-   })
+   :search { :retstart "0" :retmax "100000" }})
 
 (defn expand-name-for-query [name]
   (-> name (clojure.string/replace " " "+")
@@ -44,22 +42,28 @@
       (recur tag-children remaining-tags))
     elems))
 
-(defn get-tag-sequence-content [tag-sequence xml-string]
+(defn get-tag-sequence-data [tag-sequence conversion-function  xml-string]
   (let [xml-data (xml/parse (java.io.StringReader. xml-string))
         children (unnest-children [xml-data] tag-sequence)]
-    (mapcat #(:content %) children)))
+    (mapcat conversion-function children)))
 
 (def extract-search-result-uids
-  (partial get-tag-sequence-content
-           [:IdList :Id]))
+  (partial get-tag-sequence-data
+           [:IdList :Id]
+           #(:content %)))
 
 (def extract-link-result-uids
-  (partial get-tag-sequence-content
-           [:LinkSet :LinkSetDb :Link :Id]))
+  (partial get-tag-sequence-data
+           [:LinkSet :LinkSetDb :Link :Id]
+           #(:content %)))
+
+(defn get-child [parent tag]
+  (first (filter #(= tag (:tag %)) (:content parent))))
 
 (def extract-fetched-abstracts
-  (partial get-tag-sequence-content
-           [:PubmedArticle :MedlineCitation :Article :Abstract :AbstractText]))
+  (partial get-tag-sequence-data
+           [:PubmedArticle :MedlineCitation :Article :Abstract :AbstractText]
+           #(:content %)))
 
 (defn retrieve-author-uids [author]
   (let [request-parameters {:term (expand-name-for-query author)}
@@ -83,6 +87,5 @@
             request-url (make-request-url :fetch request-parameters)
             abstracts (extract-fetched-abstracts
                        (:body @(http/post request-url)))]
-        (println request-url)
         (recur tail-uids (into abstracts-acc abstracts)))
       abstracts-acc)))
