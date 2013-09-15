@@ -6,4 +6,5 @@
   :main entrez-vous.console
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [org.clojure/tools.cli "0.2.4"]
-                 [http-kit "2.1.10"]])
+                 [http-kit "2.1.10"]
+                 [org.clojure/data.xml "0.0.7"]])

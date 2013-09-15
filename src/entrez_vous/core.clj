@@ -1,5 +1,6 @@
 (ns entrez-vous.core
-  (:require [org.httpkit.client :as http]))
+  (:require [org.httpkit.client :as http]
+            [clojure.data.xml :as xml]))
 
 (def session-webenv (atom nil))
 
@@ -22,9 +23,6 @@
    :post { }
    })
 
-;; http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=George+hripcsak[author]
-;; http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id=23684593,23975625
-
 (defn expand-name-for-query [name]
   (-> name (clojure.string/replace " " "+")
            (clojure.string/lower-case)
@@ -45,7 +43,15 @@
         query-string (build-query-string query-parameter-map)]
     (str utility-url "?" query-string)))
 
-
+(defn get-search-result-uids [xml-string]
+  (let [xml-data (xml/parse (java.io.StringReader. xml-string))
+        xml-uids (filter (fn [e] (= :IdList (:tag e))) (:content xml-data))
+        get-uids (fn [id-list]
+                   (apply concat
+                    (for [elem (:content id-list)
+                          :when (= :Id (:tag elem))]
+                      (:content elem))))]
+    (mapcat get-uids xml-uids)))
 
 ;; (http/get request-url { :keepalive 3000 :timeout 1000 }
 ;;           (fn [{:keys [status headers body error]}]
