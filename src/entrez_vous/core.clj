@@ -49,23 +49,40 @@
         children (unnest-children [xml-data] tag-sequence)]
     (mapcat #(:content %) children)))
 
-(def get-search-result-uids
-  (partial get-tag-sequence-content [:IdList :Id]))
+(def extract-search-result-uids
+  (partial get-tag-sequence-content
+           [:IdList :Id]))
 
-(def get-link-result-uids
-  (partial get-tag-sequence-content [:LinkSet :LinkSetDb :Link :Id]))
+(def extract-link-result-uids
+  (partial get-tag-sequence-content
+           [:LinkSet :LinkSetDb :Link :Id]))
+
+(def extract-fetched-abstracts
+  (partial get-tag-sequence-content
+           [:PubmedArticle :MedlineCitation :Article :Abstract :AbstractText]))
 
 (defn retrieve-author-uids [author]
   (let [request-parameters {:term (expand-name-for-query author)}
         request-url (make-request-url :search request-parameters)]
-    (get-search-result-uids
-     (:body @(http/get request-url { :keepalive 3000 :timeout 1000 })))))
+    (extract-search-result-uids
+     (:body @(http/get request-url)))))
 
 (defn retrieve-related-uids [original-uids]
   (let [request-parameters {:id (clojure.string/join "," original-uids)}
         request-url (make-request-url :link request-parameters)]
-    (get-link-result-uids
-     (:body @(http/post request-url { :keepalive 3000 :timeout 1000 })))))
+    (extract-link-result-uids
+     (:body @(http/post request-url)))))
 
-(defn retrieve-paper-abstracts [uids]
-  nil)
+(defn retrieve-abstracts [uids]
+  (loop [remaining-uids uids
+         abstracts-acc []]
+    (if (not (empty? remaining-uids))
+      (let [head-uids (take 10000 uids)
+            tail-uids (drop 10000 uids)
+            request-parameters {:id (clojure.string/join "," head-uids)}
+            request-url (make-request-url :fetch request-parameters)
+            abstracts (extract-fetched-abstracts
+                       (:body @(http/post request-url)))]
+        (println request-url)
+        (recur tail-uids (into abstracts-acc abstracts)))
+      abstracts-acc)))
