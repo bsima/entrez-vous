@@ -43,15 +43,28 @@
         query-string (build-query-string query-parameter-map)]
     (str utility-url "?" query-string)))
 
+(defn get-uids-in-list [id-list]
+  (apply concat
+         (for [elem (:content id-list) :when (= :Id (:tag elem))]
+           (:content elem))))
+
+(defn unnest-children [elems tag-sequence]
+  (if (not (empty? tag-sequence))
+    (let [[tag & remaining-tags] tag-sequence
+          flat-contents (apply concat (for [e elems] (:content e)))
+          tag-children (filter (fn [e] (= tag (:tag e))) flat-contents)]
+      (recur tag-children remaining-tags))
+    elems))
+
 (defn get-search-result-uids [xml-string]
   (let [xml-data (xml/parse (java.io.StringReader. xml-string))
-        xml-uids (filter (fn [e] (= :IdList (:tag e))) (:content xml-data))
-        get-uids (fn [id-list]
-                   (apply concat
-                    (for [elem (:content id-list)
-                          :when (= :Id (:tag elem))]
-                      (:content elem))))]
-    (mapcat get-uids xml-uids)))
+        id-lists (unnest-children [xml-data] [:IdList :Id])]
+    (mapcat #(:content %) id-lists)))
+
+(defn get-link-result-uids [xml-string]
+  (let [xml-data (xml/parse (java.io.StringReader. xml-string))
+        id-lists (unnest-children [xml-data] [:LinkSet :LinkSetDb :Link :Id])]
+    (mapcat #(:content %) id-lists)))
 
 ;; (http/get request-url { :keepalive 3000 :timeout 1000 }
 ;;           (fn [{:keys [status headers body error]}]
