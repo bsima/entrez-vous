@@ -29,7 +29,8 @@
                         </IdList>
                       </eSearchResult>"]
       (is (= ["777" "888" "999"]
-             (get-tag-sequence-content [:IdList :Id] xml-string))))))
+             (get-tag-sequence-content [:IdList :Id]
+                                       xml-string))))))
 
 (deftest test-extract-link-result-uids
   (testing "Should retrieve the UID's from an Entrez server Link response."
@@ -70,22 +71,24 @@
                               <Id>888</Id>
                               <Score>22542813</Score>
                             </Link>
-                          </LinkSetDb></LinkSet></eLinkResult>"]
+                          </LinkSetDb>
+                        </LinkSet>
+                      </eLinkResult>"]
       (is (= ["555" "666" "777" "888"]
              (get-tag-sequence-content [:LinkSet :LinkSetDb :Link :Id]
                                        xml-string))))))
 
-(deftest test-unnest-children
-  (testing "Should return the argued elements when no more levels."
-    (is (= ["odelay"] (unnest-children ["odelay"] []))))
+(deftest test-get-children
   (testing "Should return next-level children with appropriate tags."
     (is (= [{:tag :foo :content "x"}
             {:tag :foo :content "y"}
             {:tag :foo :content "z"}]
-           (unnest-children [{ :content [{ :tag :foo :content "x" }]}
-                             { :content [{ :tag :foo :content "y" }]}
-                             { :content [{ :tag :foo :content "z" }]}]
-                            [:foo])))))
+           (get-children { :tag :moo :content
+                          [{ :content [{ :tag :foo :content "x" }] }
+                           { :content [{ :tag :foo :content "y" }] }
+                           { :content [{ :tag :foo :content "z" }] }] }
+                         [:foo]
+                         :content)))))
 
 (deftest test-get-child
   (testing "Should select the first child of the correct type."
