@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [entrez-vous.response :refer :all]))
 
-(deftest test-extract-date
+(deftest test-extract-article-date
   (testing "Should enable multiple selections with a keyset."
     (let [xml-string "<Article>
                         <ArticleDate>
