@@ -39,13 +39,16 @@
 (defn retrieve-author-uids [author]
   (let [request-parameters {:term (expand-name-for-query author)}
         request-url (build-entrez-request-url :search request-parameters)]
+    (Thread/sleep 100)
     (get-in-xml
      [:IdList :Id]
      (:body @(http/get request-url)))))
 
 (defn retrieve-related-uids [original-uids]
   (let [request-parameters {:id (clojure.string/join "," original-uids)}
-        request-url (build-entrez-request-url :link request-parameters)]
+        request-url (build-entrez-request-url :link request-parameters)
+        ret-bod (:body @(http/post request-url))]
+    (Thread/sleep 100)
     (get-in-xml
      [:LinkSet :LinkSetDb :Link :Id]
      (:body @(http/post request-url)))))
@@ -54,7 +57,7 @@
   (loop [remaining-uids uids
          abstracts-acc []]
     (if (not (empty? remaining-uids))
-      (let [[head-uids, tail-uids] (split-at 10000 uids)
+      (let [[head-uids, tail-uids] (split-at 250 remaining-uids)
             request-url (build-entrez-request-url
                          :fetch
                          {:id (clojure.string/join "," head-uids)})
@@ -62,5 +65,6 @@
                             [:PubmedArticle :MedlineCitation
                              :Article :Abstract :AbstractText]
                             (:body @(http/post request-url)))]
+        (Thread/sleep 100)
         (recur tail-uids (into abstracts-acc abstract-texts)))
       abstracts-acc)))

@@ -19,19 +19,36 @@
                              (hash-set val))))]
        ["-i" "--input" "Read author names from a text file."]
        ["-h" "--hop" "Hop to related papers." :default false :flag true]
+       ["-l" "--limit" "Limit # of relevant papers." :default 1000 :parse-fn #(Integer. %)]
        ["-o" "--output" "Choose an output directory." :default "."]))
 
-(defn scrape-abstracts [author-name filename]
-  (let [abstracts (retrieve-abstracts (retrieve-author-uids author-name))]
-    (Thread/sleep 500)
+(defn build-filename
+  ([output-directory author-name suffix]
+     (let [clean-author-name (clojure.string/lower-case
+                              (clojure.string/replace author-name " " "-"))]
+       (str output-directory "/" clean-author-name "-" suffix ".txt")))
+  ([output-directory author-name]
+     (let [clean-author-name (clojure.string/lower-case
+                              (clojure.string/replace author-name " " "-"))]
+       (str output-directory "/" clean-author-name ".txt"))))
+
+(defn _scrape-abstracts [uids filename]
+  (let [abstracts (retrieve-abstracts uids)]
     (with-open [wrtr (writer filename)]
       (doseq [abstract abstracts] (do (.write wrtr abstract)
                                       (.write wrtr "\n\n"))))))
 
-(defn build-filename [output-directory author-name]
-  (let [clean-author-name (clojure.string/lower-case
-                           (clojure.string/replace author-name " " "-"))]
-    (str output-directory "/" clean-author-name ".txt")))
+(defn scrape-abstracts [output-directory author-name options]
+  (let [author-uids (retrieve-author-uids author-name)
+        author-filename (build-filename output-directory author-name)]
+    (_scrape-abstracts author-uids author-filename)
+    (when (:hop options)
+      (let [related-uids (take (:limit options)
+                               (retrieve-related-uids author-uids))
+            related-filename (build-filename output-directory
+                                             author-name
+                                             "rel")]
+        (_scrape-abstracts related-uids related-filename)))))
 
 (defn get-names-from-file [filename]
   (with-open [rdr (reader filename)]
@@ -44,9 +61,7 @@
                              (get-names-from-file filename)
                              nil))]
     (doseq [author-name author-names]
-      (scrape-abstracts
-       author-name
-       (build-filename output-directory author-name)))))
+      (scrape-abstracts output-directory author-name options))))
 
 (defn -main [& args]
   (let [[options args banner] (parse-args args)]
