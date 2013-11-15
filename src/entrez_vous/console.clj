@@ -48,8 +48,7 @@
        author-name
        (build-filename output-directory author-name)))))
 
-(defn -main
-  [& args]
+(defn -main [& args]
   (let [[options args banner] (parse-args args)]
     (when (:help options)
       (println banner)
