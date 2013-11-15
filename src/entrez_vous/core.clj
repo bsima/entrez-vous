@@ -4,6 +4,29 @@
             [org.httpkit.client :as http]
             [clojure.data.xml :as xml]))
 
+(def utility-base-url "http://eutils.ncbi.nlm.nih.gov/entrez/eutils")
+
+(def utility-name-map
+  {:search "esearch.fcgi"
+   :fetch "efetch.fcgi"
+   :link "elink.fcgi"})
+
+(def utility-parameter-map
+  {:all { :tool "entrez-vous" :db "pubmed" }
+   :fetch { :retmode "xml" :rettype "abstract" :retmax "10000" :retstart "0" }
+   :link { :dbfrom "pubmed" :cmd "neighbor_score" :linkname "pubmed_pubmed" }
+   :search { :retstart "0" :retmax "100000" }})
+
+
+(defn build-entrez-request-url [resource-key request-parameter-map]
+  (let [utility-resource-url (resource-key utility-name-map)
+        parameter-map (reduce into [request-parameter-map
+                                    (:all utility-parameter-map)
+                                    (resource-key utility-parameter-map)])]
+    (build-request-url utility-base-url
+                       utility-resource-url
+                       parameter-map)))
+
 (defn expand-name-for-query [name]
   (-> name (clojure.string/replace " " "+")
            (clojure.string/lower-case)
@@ -15,14 +38,14 @@
 
 (defn retrieve-author-uids [author]
   (let [request-parameters {:term (expand-name-for-query author)}
-        request-url (build-request-url :search request-parameters)]
+        request-url (build-entrez-request-url :search request-parameters)]
     (get-in-xml
      [:IdList :Id]
      (:body @(http/get request-url)))))
 
 (defn retrieve-related-uids [original-uids]
   (let [request-parameters {:id (clojure.string/join "," original-uids)}
-        request-url (build-request-url :link request-parameters)]
+        request-url (build-entrez-request-url :link request-parameters)]
     (get-in-xml
      [:LinkSet :LinkSetDb :Link :Id]
      (:body @(http/post request-url)))))
@@ -32,7 +55,7 @@
          abstracts-acc []]
     (if (not (empty? remaining-uids))
       (let [[head-uids, tail-uids] (split-at 10000 uids)
-            request-url (build-request-url
+            request-url (build-entrez-request-url
                          :fetch
                          {:id (clojure.string/join "," head-uids)})
             abstract-texts (get-in-xml
