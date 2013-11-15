@@ -1,5 +1,4 @@
-(ns entrez-vous.response
-  (:require [clojure.data.xml :as xml]))
+(ns entrez-vous.response)
 
 (defn- eq-or-in [a b] (or (= b a) (= a (b a))))
 
@@ -15,7 +14,3 @@
                                (filter #(eq-or-in (:tag %) tag) elems))]
         (recur next-elems remaining-tags))
       elems)))
-
-(defn get-tag-sequence-content [tag-sequence xml-string]
-  (let [xml-data (xml/parse (java.io.StringReader. xml-string))]
-    (get-children xml-data tag-sequence :content)))
