@@ -16,10 +16,6 @@
         (recur next-elems remaining-tags))
       elems)))
 
-(defn get-tag-sequence-data [tag-sequence content-key xml-string]
-  (let [xml-data (xml/parse (java.io.StringReader. xml-string))]
-    (get-children xml-data tag-sequence content-key)))
-
 (defn get-tag-sequence-content [tag-sequence xml-string]
-  (get-tag-sequence-data tag-sequence :content xml-string))
-
+  (let [xml-data (xml/parse (java.io.StringReader. xml-string))]
+    (get-children xml-data tag-sequence :content)))
