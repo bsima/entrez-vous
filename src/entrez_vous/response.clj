@@ -5,7 +5,9 @@
   (if (not (empty? tag-sequence))
     (let [[tag & remaining-tags] tag-sequence
           flat-contents (apply concat (for [e elems] (:content e)))
-          tag-children (filter (fn [e] (= tag (:tag e))) flat-contents)]
+          tag-children (filter #(or (= tag (:tag %))
+                                    (not (nil? (tag (:tag %)))))
+                               flat-contents)]
       (recur tag-children remaining-tags))
     elems))
 
@@ -18,4 +20,6 @@
   (get-tag-sequence-data tag-sequence #(:content %) xml-string))
 
 (defn get-child [parent tag]
-  (first (filter #(= tag (:tag %)) (:content parent))))
+  (first (filter #(or (= tag (:tag %))
+                      (not (nil? (tag (:tag %)))))
+                 (:content parent))))

@@ -2,6 +2,20 @@
   (:require [clojure.test :refer :all]
             [entrez-vous.response :refer :all]))
 
+(deftest test-extract-date
+  (testing "Should enable multiple selections with a keyset."
+    (let [xml-string "<Article>
+                        <ArticleDate>
+                          <Year>2013</Year>
+                          <Month>11</Month>
+                          <Day>06</Day>
+                        </ArticleDate>
+                      </Article>"]
+      (is (= ["2013" "11" "06"]
+             (get-tag-sequence-content [:ArticleDate
+                                        (sorted-set :Year :Month :Day)]
+                                       xml-string))))))
+
 (deftest test-extract-search-result-uids
   (testing "Should retrieve the UID's from an Entrez server Search response."
     (let [xml-string "<eSearchResult>
