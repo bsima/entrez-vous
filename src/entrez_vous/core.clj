@@ -47,11 +47,16 @@
 (defn retrieve-related-uids [original-uids]
   (let [request-parameters {:id (clojure.string/join "," original-uids)}
         request-url (build-entrez-request-url :link request-parameters)
-        ret-bod (:body @(http/post request-url))]
+        response-xml (xml/parse
+                      (java.io.StringReader.
+                       (:body @(http/post request-url))))
+
+        in-response #(get-children response-xml % :content)
+        related-uids (in-response [:LinkSet :LinkSetDb :Link :Id])
+        related-scores (in-response [:LinkSet :LinkSetDb :Link :Score])]
+
     (Thread/sleep 100)
-    (get-in-xml
-     [:LinkSet :LinkSetDb :Link :Id]
-     (:body @(http/post request-url)))))
+    (map first (sort-by second (map vector related-uids related-scores)))))
 
 (defn retrieve-abstracts [uids]
   (loop [remaining-uids uids
