@@ -22,15 +22,15 @@
        ["-l" "--limit" "Limit # of relevant papers." :default 1000 :parse-fn #(Integer. %)]
        ["-o" "--output" "Choose an output directory." :default "."]))
 
+(defn clean-author-name [author-name]
+  (clojure.string/lower-case
+   (clojure.string/replace author-name " " "-")))
+
 (defn build-filename
   ([output-directory author-name suffix]
-     (let [clean-author-name (clojure.string/lower-case
-                              (clojure.string/replace author-name " " "-"))]
-       (str output-directory "/" clean-author-name "-" suffix ".txt")))
+     (str output-directory "/" (clean-author-name author-name) "-" suffix ".txt"))
   ([output-directory author-name]
-     (let [clean-author-name (clojure.string/lower-case
-                              (clojure.string/replace author-name " " "-"))]
-       (str output-directory "/" clean-author-name ".txt"))))
+     (str output-directory "/" (clean-author-name author-name) ".txt")))
 
 (defn _scrape-abstracts [uids filename]
   (let [abstracts (retrieve-abstracts uids)]
