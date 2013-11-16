@@ -66,29 +66,35 @@
             request-url (build-entrez-request-url
                          :fetch
                          {:id (clojure.string/join "," head-uids)})
+            response-txt (:body @(http/post request-url))
             response-xml (xml/parse
                           (java.io.StringReader.
-                           (:body @(http/post request-url))))
+                           response-txt))
             article-nodes (->> (:content response-xml)
                                (filter #(= :PubmedArticle (:tag %)))
-                               (map #(get-child % :MedlineCitation))
-                               (map #(get-child % :Article)))
+                               (map #(get-child % :MedlineCitation)))
 
             abstracts (for [article-node article-nodes
                             :let [article-text
-                                  (clojure.string/join "  "
+                                  (into
                                    (get-children article-node
-                                                 [:Abstract :AbstractText]
+                                                 [:Article 
+                                                  :Abstract
+                                                  :AbstractText]
+                                                 :content)
+                                   (get-children article-node
+                                                 [:Article
+                                                  :ArticleTitle]
                                                  :content))
                                   article-date
-                                  (clojure.string/join "-"
                                    (get-children article-node
-                                                 [:ArticleDate
+                                                 [:DateCreated
                                                   (sorted-set :Year
                                                               :Month
                                                               :Day)]
-                                                 :content))]]
-                        { :date article-date :text article-text })]
+                                                 :content)]]
+                        { :text (clojure.string/join "\n" article-text)
+                          :date (clojure.string/join "-"  article-date) })]
         (Thread/sleep 100)
         (recur tail-uids (into abstracts-acc abstracts)))
       abstracts-acc)))

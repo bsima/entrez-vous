@@ -37,7 +37,7 @@
     (with-open [wrtr (writer filename)]
       (doseq [abstract abstracts]
         (do (.write wrtr (:text abstract))
-            (.write wrtr (str "  (" (:date abstract) ")"))
+            (.write wrtr (str "\n" (:date abstract)))
             (.write wrtr "\n\n"))))))
 
 (defn scrape-abstracts [output-directory author-name options]
