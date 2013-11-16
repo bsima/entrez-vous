@@ -35,8 +35,10 @@
 (defn _scrape-abstracts [uids filename]
   (let [abstracts (retrieve-abstracts uids)]
     (with-open [wrtr (writer filename)]
-      (doseq [abstract abstracts] (do (.write wrtr abstract)
-                                      (.write wrtr "\n\n"))))))
+      (doseq [abstract abstracts]
+        (do (.write wrtr (:text abstract))
+            (.write wrtr (str "  (" (:date abstract) ")"))
+            (.write wrtr "\n\n"))))))
 
 (defn scrape-abstracts [output-directory author-name options]
   (let [author-uids (retrieve-author-uids author-name)

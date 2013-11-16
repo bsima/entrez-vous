@@ -66,10 +66,29 @@
             request-url (build-entrez-request-url
                          :fetch
                          {:id (clojure.string/join "," head-uids)})
-            abstract-texts (get-in-xml
-                            [:PubmedArticle :MedlineCitation
-                             :Article :Abstract :AbstractText]
-                            (:body @(http/post request-url)))]
+            response-xml (xml/parse
+                          (java.io.StringReader.
+                           (:body @(http/post request-url))))
+            article-nodes (->> (:content response-xml)
+                               (filter #(= :PubmedArticle (:tag %)))
+                               (map #(get-child % :MedlineCitation))
+                               (map #(get-child % :Article)))
+
+            abstracts (for [article-node article-nodes
+                            :let [article-text
+                                  (clojure.string/join "  "
+                                   (get-children article-node
+                                                 [:Abstract :AbstractText]
+                                                 :content))
+                                  article-date
+                                  (clojure.string/join "-"
+                                   (get-children article-node
+                                                 [:ArticleDate
+                                                  (sorted-set :Year
+                                                              :Month
+                                                              :Day)]
+                                                 :content))]]
+                        { :date article-date :text article-text })]
         (Thread/sleep 100)
-        (recur tail-uids (into abstracts-acc abstract-texts)))
+        (recur tail-uids (into abstracts-acc abstracts)))
       abstracts-acc)))
