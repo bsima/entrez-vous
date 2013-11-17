@@ -36,9 +36,10 @@
 
 (defn _scrape-abstracts [uids basename options]
   (let [abstracts (retrieve-abstracts uids)
-        get-writer (fn [abstract]
-                     (if (:split options)
-                       (writer (str basename "-" (:date abstract) ".txt"))
+        get-writer (if (:split options)
+                     (fn [abstract]
+                       (writer (str basename "-" (:date abstract) ".txt")))
+                     (fn [abstract]
                        (writer (str basename ".txt") :append true)))]
     (doseq [abstract abstracts]
       (with-open [wrtr (get-writer abstract)]
