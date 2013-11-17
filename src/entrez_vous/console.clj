@@ -11,6 +11,8 @@
   (cli args
        "This program scrapes author abstracts from NCBI Pubmed database."
        ["-h" "--help" "Prints the help banner." :default false :flag true]
+       ["-d" "--date" "Append date-stamps." :default false :flag true]
+       ["-s" "--split" "Split by articles." :default false :flag true]
        ["-n" "--name" "Add an author name to target."
         :assoc-fn (fn [previous key val]
                     (assoc previous key
@@ -26,31 +28,35 @@
   (clojure.string/lower-case
    (clojure.string/replace author-name " " "-")))
 
-(defn build-filename
+(defn base-filename
   ([output-directory author-name suffix]
-     (str output-directory "/" (clean-author-name author-name) "-" suffix ".txt"))
+     (str output-directory "/" (clean-author-name author-name) "-" suffix))
   ([output-directory author-name]
-     (str output-directory "/" (clean-author-name author-name) ".txt")))
+     (str output-directory "/" (clean-author-name author-name))))
 
-(defn _scrape-abstracts [uids filename]
-  (let [abstracts (retrieve-abstracts uids)]
-    (with-open [wrtr (writer filename)]
-      (doseq [abstract abstracts]
+(defn _scrape-abstracts [uids basename options]
+  (let [abstracts (retrieve-abstracts uids)
+        get-writer (fn [abstract]
+                     (if (:split options)
+                       (writer (str basename "-" (:date abstract) ".txt"))
+                       (writer (str basename ".txt") :append true)))]
+    (doseq [abstract abstracts]
+      (with-open [wrtr (get-writer abstract)]
         (do (.write wrtr (:text abstract))
-            (.write wrtr (str "\n" (:date abstract)))
+            (when (:date options) (.write wrtr (str "\n" (:date abstract))))
             (.write wrtr "\n\n"))))))
 
 (defn scrape-abstracts [output-directory author-name options]
   (let [author-uids (retrieve-author-uids author-name)
-        author-filename (build-filename output-directory author-name)]
-    (_scrape-abstracts author-uids author-filename)
+        author-basename (base-filename output-directory author-name)]
+    (_scrape-abstracts author-uids author-basename options)
     (when (:hop options)
       (let [related-uids (take (:limit options)
                                (retrieve-related-uids author-uids))
-            related-filename (build-filename output-directory
-                                             author-name
-                                             "rel")]
-        (_scrape-abstracts related-uids related-filename)))))
+            related-basename (base-filename output-directory
+                                            author-name
+                                            "rel")]
+        (_scrape-abstracts related-uids related-basename options)))))
 
 (defn get-names-from-file [filename]
   (with-open [rdr (reader filename)]
