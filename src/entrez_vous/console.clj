@@ -27,10 +27,10 @@
        ["-l" "--limit" "Limit # of relevant papers." :default 1000 :parse-fn #(Integer. %)]
        ["-o" "--output" "Choose an output directory." :default "."]))
 
-(defn clean-author-name
-  "Process author name. Make lowercase and replace spaces with
-  hyphens. If the author name is suceeded by any form of MD or PhD, it
-  is removed."
+(defn- clean-author-name
+  "A private helper function that processes author names. Make
+  lowercase and replace spaces with hyphens. If the author name is
+  suceeded by any form of MD or PhD, it is removed."
   [author-name]
   (as-> author-name x
         (str/replace x #"(?i)m\.?d\.?|phd" " ")
