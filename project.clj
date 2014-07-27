@@ -1,4 +1,4 @@
-(defproject entrez-vous "0.1.0-SNAPSHOT"
+(defproject entrez-vous "0.1.1"
   :description "Entrez-Vous: A Clojure Project for Fun and Utility!"
   :url "https://github.com/bima/entrez-vous"
   :license {:name "Eclipse Public License"
