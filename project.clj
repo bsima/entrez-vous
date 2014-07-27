@@ -1,5 +1,5 @@
 (defproject entrez-vous "0.1.1"
-  :description "Entrez-Vous: A Clojure Project for Fun and Utility!"
+  :description "Entrez-Vous: A Clojure library for the PubMed database"
   :url "https://github.com/bima/entrez-vous"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
